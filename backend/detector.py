@@ -10,7 +10,10 @@ except ImportError:
 class Detector:
     """
     Lightweight wrapper around YOLO for object detection.
-    Returns a single best bounding box and label for simplicity.
+
+    Now supports:
+      - detect_all(img): list of {label, bbox, score}
+      - detect_single(img): best detection (for compatibility)
     """
 
     def __init__(self, confidence_threshold: float = 0.5):
@@ -23,40 +26,67 @@ class Detector:
             except Exception:
                 self.model = None
 
-    def detect_single(self, img: np.ndarray):
-        """
-        Detect the most confident object in the frame.
-        Returns: (label: str or None, bbox: (x1, y1, x2, y2) or None)
-        """
-        h, w, _ = img.shape
-
+    def _run_model(self, img: np.ndarray):
         if self.model is None:
-            return None, None
-
-        results = self.model.predict(
+            return None
+        return self.model.predict(
             source=img,
             conf=self.confidence_threshold,
             verbose=False,
         )
 
-        if not results or len(results) == 0:
-            return None, None
+    def detect_all(self, img: np.ndarray):
+        """
+        Return all detections as a list of dicts:
+        [
+          {"label": str, "bbox": (x1,y1,x2,y2), "score": float},
+          ...
+        ]
+        """
+        h, w, _ = img.shape
+
+        results = self._run_model(img)
+        if results is None or len(results) == 0:
+            return []
 
         boxes = results[0].boxes
         if boxes is None or len(boxes) == 0:
+            return []
+
+        detections = []
+        names = results[0].names
+
+        for b in boxes:
+            cls_id = int(b.cls.item())
+            conf = float(b.conf.item())
+            label = names.get(cls_id, "object")
+
+            x1, y1, x2, y2 = b.xyxy[0].tolist()
+            x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+
+            # Clip to frame
+            x1 = max(0, min(x1, w - 1))
+            x2 = max(0, min(x2, w - 1))
+            y1 = max(0, min(y1, h - 1))
+            y2 = max(0, min(y2, h - 1))
+
+            detections.append(
+                {
+                    "label": label,
+                    "bbox": (x1, y1, x2, y2),
+                    "score": conf,
+                }
+            )
+
+        return detections
+
+    def detect_single(self, img: np.ndarray):
+        """
+        Kept for compatibility: return best detection only.
+        """
+        dets = self.detect_all(img)
+        if not dets:
             return None, None
 
-        best_idx = int(boxes.conf.argmax().item())
-        best_box = boxes[best_idx]
-        cls_id = int(best_box.cls.item())
-        label = results[0].names.get(cls_id, "object")
-
-        x1, y1, x2, y2 = best_box.xyxy[0].tolist()
-        x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
-
-        x1 = max(0, min(x1, w - 1))
-        x2 = max(0, min(x2, w - 1))
-        y1 = max(0, min(y1, h - 1))
-        y2 = max(0, min(y2, h - 1))
-
-        return label, (x1, y1, x2, y2)
+        best = max(dets, key=lambda d: d["score"])
+        return best["label"], best["bbox"]
