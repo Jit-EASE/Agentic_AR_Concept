@@ -1,4 +1,4 @@
-# Spectre Agentic AR – Irish Object Lens (Streamlit)
+# Agentic AR – Irish Object Lens (Streamlit)
 
 This prototype turns a Streamlit app into an "agentic augmented reality" lens:
 you open it on an iPhone (or any device with a camera), give camera permission,
@@ -13,11 +13,11 @@ life context).
 
 ## 1. Features
 
-- 📷 Live camera feed via `streamlit-webrtc`
-- 🧠 YOLO-based object detection (via `ultralytics`)
-- 🧮 Agentic reasoner using OpenAI GPT‑4o‑mini (optional toggle)
-- 🧊 Spectre-style dark neon UI skin
-- 🧪 Experimental WebAR scaffold using A‑Frame (optional)
+- Live camera feed via `streamlit-webrtc`
+- YOLO-based object detection (via `ultralytics`)
+- Agentic reasoner using OpenAI GPT‑4o‑mini (optional toggle)
+- Spectre-style dark neon UI skin
+- Experimental WebAR scaffold using A‑Frame (optional)
 
 ---
 
