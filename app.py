@@ -97,7 +97,7 @@ class ARVideoProcessor(VideoProcessorBase):
                 self.last_box = None
                 self.last_agents = None
 
-                # ----------------------------------------------------
+                       # ----------------------------------------------------
         # DRAW PROFESSIONAL, COMPACT MOBILE-FRIENDLY HUD
         # ----------------------------------------------------
         if self.last_label and self.last_box:
