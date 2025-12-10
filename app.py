@@ -195,7 +195,7 @@ with col_video:
 # INTELLIGENCE PANEL
 # ----------------------------------------------------
 with col_panel:
-    st.markdown("ntelligence Panel", unsafe_allow_html=True)
+    st.markdown("Intelligence Panel", unsafe_allow_html=True)
     panel = st.empty()
 
     intel = None
