@@ -26,6 +26,7 @@ st.markdown(
     <p class='spectre-subtitle'>
     Live multi-agent AR: point your camera at an object and see sustainability, supply chain,
     econometric, hazard, and LPIS insights overlaid and in the side intelligence panel.
+    Rear camera is used by default on iPhone.
     </p>
     """,
     unsafe_allow_html=True
@@ -37,9 +38,19 @@ run_reasoner = st.sidebar.checkbox("Enable Agentic Reasoner (GPT-4o-mini)", valu
 max_fps = st.sidebar.slider("Processing FPS", 1, 15, 5)
 confidence_threshold = st.sidebar.slider("Detection confidence", 0.2, 0.9, 0.5, 0.05)
 
-# Autorefresh to keep the intelligence panel in sync
+# Camera toggle UI
+camera_choice = st.sidebar.selectbox(
+    "Camera Source",
+    ["rear (recommended)", "front"]
+)
+
+# Translate UI choice to WebRTC facingMode
+facing_mode = "environment" if camera_choice == "rear (recommended)" else "user"
+
+# Auto refresh for panel updates
 st_autorefresh(interval=1500, key="intel_refresh")
 
+# Init detector + reasoning engine
 detector = Detector(confidence_threshold=confidence_threshold)
 reasoner = AgenticReasoner(enabled=run_reasoner)
 
@@ -49,7 +60,7 @@ class ARVideoProcessor(VideoProcessorBase):
         self.frame_count = 0
         self.last_label = None
         self.last_box = None
-        self.last_agents = None  # structured dict from AgenticReasoner
+        self.last_agents = None
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
         img = frame.to_ndarray(format="bgr24")
@@ -72,14 +83,13 @@ class ARVideoProcessor(VideoProcessorBase):
                 self.last_box = None
                 self.last_agents = None
 
-        # Draw multi-line Spectre HUD overlay
+        # Draw multi-line HUD
         if self.last_label and self.last_box is not None:
             x1, y1, x2, y2 = self.last_box
 
-            # Draw bounding box
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 255), 2)
 
-            # Build lines for HUD
+            # HUD lines
             lines = [self.last_label]
 
             if self.last_agents:
@@ -92,18 +102,13 @@ class ARVideoProcessor(VideoProcessorBase):
                 sc = self.last_agents.get("SUPPLY_CHAIN") or ""
                 lpis = self.last_agents.get("LPIS_GEO") or ""
 
-                if sust:
-                    lines.append("Sust: " + clip(sust))
-                if econ:
-                    lines.append("Econ: " + clip(econ))
-                if hazard:
-                    lines.append("Haz: " + clip(hazard))
-                if sc:
-                    lines.append("SC: " + clip(sc))
-                if lpis:
-                    lines.append("LPIS: " + clip(lpis))
+                if sust: lines.append("Sust: " + clip(sust))
+                if econ: lines.append("Econ: " + clip(econ))
+                if hazard: lines.append("Haz: " + clip(hazard))
+                if sc: lines.append("SC: " + clip(sc))
+                if lpis: lines.append("LPIS: " + clip(lpis))
 
-            # Measure widest line
+            # Measure box size
             font = cv2.FONT_HERSHEY_SIMPLEX
             font_scale = 0.5
             thickness = 1
@@ -116,7 +121,6 @@ class ARVideoProcessor(VideoProcessorBase):
             box_top = max(0, y1 - total_height - 10)
             box_left = x1
 
-            # Background rectangle
             cv2.rectangle(
                 img,
                 (box_left, box_top),
@@ -125,7 +129,6 @@ class ARVideoProcessor(VideoProcessorBase):
                 thickness=-1,
             )
 
-            # Border with neon-ish feel
             cv2.rectangle(
                 img,
                 (box_left, box_top),
@@ -134,7 +137,7 @@ class ARVideoProcessor(VideoProcessorBase):
                 thickness=1,
             )
 
-            # Draw each line
+            # Draw lines
             y_text = box_top + 4 + line_height - 4
             for line, (tw, th) in zip(lines, text_sizes):
                 cv2.putText(
@@ -152,14 +155,13 @@ class ARVideoProcessor(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
-# Layout: video on the left, intelligence panel on the right
+# Layout: video left, panel right
 col_video, col_panel = st.columns([2.3, 1])
 
 with col_video:
     st.markdown(
-        "<div class='spectre-panel'><b>Instructions:</b> On iPhone, open this app in Safari, "
-        "grant camera access, and point it at farm objects, tools or infrastructure. "
-        "The AR HUD will overlay multi-agent insights above the detected object.</div>",
+        "<div class='spectre-panel'><b>Instructions:</b> On iPhone, rear camera will be "
+        "used by default. You can switch cameras from the sidebar.</div>",
         unsafe_allow_html=True,
     )
 
@@ -167,7 +169,10 @@ with col_video:
         key="spectre-agentic-ar-v2",
         mode=WebRtcMode.SENDRECV,
         video_processor_factory=ARVideoProcessor,
-        media_stream_constraints={"video": True, "audio": False},
+        media_stream_constraints={
+            "video": {"facingMode": {"exact": facing_mode}},  # 🔥 THIS IS THE IMPORTANT PART
+            "audio": False
+        },
         async_processing=True,
     )
 
@@ -206,6 +211,6 @@ with col_panel:
     else:
         panel.markdown(
             "<div class='spectre-panel'>No object locked yet. "
-            "Point the camera steadily at a single object to get multi-agent intelligence.</div>",
+            "Hold the camera steady toward the object.</div>",
             unsafe_allow_html=True,
         )
