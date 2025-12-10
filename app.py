@@ -17,7 +17,7 @@ with open("ui/spectre_theme.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.markdown(
-    "<h1 class='spectre-title'>Agentic Farm Intelligence - Augmented Reality System - Irish Agri Food Research</h1>",
+    "<h1 class='spectre-title'>Agentic Farm Intelligence - Augmented Reality System - Ireland</h1>",
     unsafe_allow_html=True
 )
 
