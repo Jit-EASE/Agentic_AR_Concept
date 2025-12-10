@@ -97,8 +97,8 @@ class ARVideoProcessor(VideoProcessorBase):
                 self.last_box = None
                 self.last_agents = None
 
-        # ----------------------------------------------------
-        # DRAW PROFESSIONAL HUD
+                # ----------------------------------------------------
+        # DRAW PROFESSIONAL, COMPACT MOBILE-FRIENDLY HUD
         # ----------------------------------------------------
         if self.last_label and self.last_box:
             x1, y1, x2, y2 = self.last_box
@@ -106,67 +106,88 @@ class ARVideoProcessor(VideoProcessorBase):
             # bounding box
             cv2.rectangle(img, (x1, y1), (x2, y2), self.box_border, 2)
 
-            # HUD TEXT LINES
-            lines = [self.last_label]
+            # ---------- TEXT WRAPPING FUNCTION ----------
+            def wrap(text, max_len=38):
+                words = text.split()
+                lines = []
+                line = ""
+                for w in words:
+                    if len(line) + len(w) + 1 <= max_len:
+                        line += (" " + w) if line else w
+                    else:
+                        lines.append(line)
+                        line = w
+                if line:
+                    lines.append(line)
+                return lines
+
+            # ---------- BUILD LINES ----------
+            final_lines = []
+            final_lines.append(self.last_label.upper())
 
             if self.last_agents:
-                clip = lambda s: s[:60] + "…" if len(s) > 60 else s
                 sust = self.last_agents.get("SUSTAINABILITY") or ""
                 econ = self.last_agents.get("ECONOMETRICS") or ""
                 haz  = self.last_agents.get("HAZARD") or ""
                 sc   = self.last_agents.get("SUPPLY_CHAIN") or ""
                 lpis = self.last_agents.get("LPIS_GEO") or ""
 
-                if sust: lines.append("SUST: " + clip(sust))
-                if econ: lines.append("ECON: " + clip(econ))
-                if haz:  lines.append("HAZ:  " + clip(haz))
-                if sc:   lines.append("SC:   " + clip(sc))
-                if lpis: lines.append("LPIS: " + clip(lpis))
+                for ln in wrap("SUST ▸ " + sust): final_lines.append(ln)
+                for ln in wrap("ECON ▸ " + econ): final_lines.append(ln)
+                for ln in wrap("HAZ ▸ "  + haz):  final_lines.append(ln)
+                for ln in wrap("SCM ▸ "  + sc):   final_lines.append(ln)
+                for ln in wrap("LPIS ▸ " + lpis): final_lines.append(ln)
 
-            # TEXT MEASUREMENT
-            sizes = [cv2.getTextSize(l, self.font, self.font_scale, self.font_thickness)[0] for l in lines]
-            max_w = max(w for (w, h) in sizes)
-            line_h = max(h for (w, h) in sizes) + 6
-            total_h = line_h * len(lines) + 8
+            # ---------- FONT + COMPACT METRICS ----------
+            font = self.font
+            scale = 0.45        # Smaller for AR mobile
+            thick = 1
+            line_h = 20         # fixed-height per text line
+            max_width = 320     # FORCE HUD WIDTH (IMPORTANT)
 
-            box_top = max(0, y1 - total_h - 10)
-            box_left = x1
+            # Measure actual max width
+            w_list = [
+                cv2.getTextSize(t, font, scale, thick)[0][0]
+                for t in final_lines
+            ]
+            text_w = min(max(w_list), max_width)
+            total_h = line_h * len(final_lines) + 10
 
-            # BACKGROUND BOX
+            # HUD position (above box)
+            hud_x = x1
+            hud_y = max(0, y1 - total_h - 10)
+
+            # ---------- DRAW BACKGROUND ----------
             cv2.rectangle(
                 img,
-                (box_left, box_top),
-                (box_left + max_w + 20, box_top + total_h),
+                (hud_x, hud_y),
+                (hud_x + text_w + 22, hud_y + total_h),
                 self.box_bg,
                 -1
             )
 
-            # BORDER
             cv2.rectangle(
                 img,
-                (box_left, box_top),
-                (box_left + max_w + 20, box_top + total_h),
+                (hud_x, hud_y),
+                (hud_x + text_w + 22, hud_y + total_h),
                 self.box_border,
-                self.box_thickness
+                1
             )
 
-            # DRAW TEXT
-            y_text = box_top + 20
-            for line in lines:
+            # ---------- DRAW ALL TEXT LINES ----------
+            y_text = hud_y + 18
+            for line in final_lines:
                 cv2.putText(
                     img,
                     line,
-                    (box_left + 10, y_text),
-                    self.font,
-                    self.font_scale,
+                    (hud_x + 10, y_text),
+                    font,
+                    scale,
                     self.text_color,
-                    self.font_thickness,
-                    cv2.LINE_AA
+                    thick,
+                    cv2.LINE_AA,
                 )
                 y_text += line_h
-
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
 
 # ----------------------------------------------------
 # PAGE LAYOUT
