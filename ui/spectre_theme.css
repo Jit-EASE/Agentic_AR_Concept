@@ -1,75 +1,60 @@
-:root {
-  --spectre-bg: #05070b;
-  --spectre-panel: #0b101a;
-  --spectre-accent: #00fff5;
-  --spectre-accent-soft: rgba(0, 255, 245, 0.2);
-  --spectre-text: #f5f5f5;
-  --spectre-muted: #9fa4b3;
-  --spectre-border: #1b2436;
+/* ------------------------------
+   AFI-AR Professional UI Theme
+   Clean MIS / Engineering Style
+------------------------------ */
+
+/* Global Background */
+body, html {
+    background-color: #0f1116 !important;
+    font-family: "Inter", "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+    color: #E5E5E5 !important;
 }
 
-body {
-  background-color: var(--spectre-bg);
-  color: var(--spectre-text);
-}
-
-.main, .block-container {
-  background: radial-gradient(circle at top left, #101827 0, #05070b 45%, #000000 100%);
-}
-
+/* Title */
 .spectre-title {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  font-size: 2.1rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--spectre-accent);
-  text-shadow: 0 0 12px rgba(0, 255, 245, 0.65);
-  margin-bottom: 0.25rem;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #E8EAED;
 }
 
+/* Subtitle */
 .spectre-subtitle {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  font-size: 0.95rem;
-  color: var(--spectre-muted);
-  max-width: 720px;
-  margin-bottom: 1.5rem;
+    font-size: 16px;
+    font-weight: 400;
+    color: #BFC5D2;
+    line-height: 1.45;
 }
 
+/* Intelligence Panel */
 .spectre-panel {
-  background: linear-gradient(135deg, rgba(11, 16, 26, 0.98), rgba(15, 23, 42, 0.95));
-  border-radius: 18px;
-  border: 1px solid var(--spectre-border);
-  box-shadow:
-    0 0 0 1px rgba(148, 163, 184, 0.15),
-    0 18px 45px rgba(15, 23, 42, 0.85);
-  padding: 0.8rem 1rem;
-  font-size: 0.9rem;
-  color: var(--spectre-muted);
-  margin-bottom: 0.75rem;
+    background: rgba(18, 20, 27, 0.75);
+    border: 1px solid #1f2128;
+    padding: 1rem;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #E5E5E5;
+    line-height: 1.4;
 }
 
-.css-1kyxreq, .css-12oz5g7, .stSidebar {
-  background: radial-gradient(circle at top, #020617 0, #020617 35%, #000000 100%) !important;
+/* Streamlit Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #16181F !important;
+    border-right: 1px solid #1f2128;
+}
+section[data-testid="stSidebar"] * {
+    color: #D9DDE4 !important;
+    font-family: "Inter", sans-serif !important;
 }
 
-.stSidebar > div {
-  background: transparent !important;
+/* Headers inside panels */
+.spectre-panel b {
+    color: #FFFFFF;
 }
 
-.stCheckbox, .stSlider {
-  color: var(--spectre-text) !important;
-}
-
-.stSlider > div > div > div {
-  background-color: var(--spectre-accent-soft) !important;
-}
-
-.stSlider [data-baseweb="slider"] > div {
-  background-color: var(--spectre-accent-soft) !important;
-}
-
-.stSlider [data-baseweb="slider"] [role="slider"] {
-  box-shadow: 0 0 0 4px rgba(0, 255, 245, 0.35) !important;
-  background-color: var(--spectre-accent) !important;
+/* Horizontal Rule Styling */
+hr {
+    border: none;
+    border-top: 1px solid #2A2C34;
+    margin: 0.5rem 0;
 }
