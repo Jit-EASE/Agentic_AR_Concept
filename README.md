@@ -1,4 +1,4 @@
-# Agentic AR – Irish Object Lens (Streamlit)
+# Agentic Farm Intelligence - AR System
 
 This prototype turns a Streamlit app into an "agentic augmented reality" lens:
 you open it on an iPhone (or any device with a camera), give camera permission,
