@@ -1,0 +1,1 @@
+console.log('WebAR scaffold loaded.');
