@@ -17,7 +17,7 @@ with open("ui/spectre_theme.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.markdown(
-    "<h1 class='spectre-title'>Spectre Agentic AR – Irish Object Lens</h1>",
+    "<h1 class='spectre-title'>Agentic Farm Intelligence - Augmented Reality System - Irish Agri Food Research</h1>",
     unsafe_allow_html=True
 )
 
@@ -34,7 +34,7 @@ st.markdown(
 
 # Sidebar controls
 st.sidebar.header("Agentic AR Controls")
-run_reasoner = st.sidebar.checkbox("Enable Agentic Reasoner (GPT-4o-mini)", value=False)
+run_reasoner = st.sidebar.checkbox("Enable Agentic Reasoner", value=False)
 max_fps = st.sidebar.slider("Processing FPS", 1, 15, 5)
 confidence_threshold = st.sidebar.slider("Detection confidence", 0.2, 0.9, 0.5, 0.05)
 
@@ -177,7 +177,7 @@ with col_video:
     )
 
 with col_panel:
-    st.markdown("### 🧠 Spectre Intelligence Panel")
+    st.markdown("### Intelligence Panel")
     panel = st.empty()
 
     intel = None
@@ -199,7 +199,7 @@ with col_panel:
             <div class='spectre-panel'>
               <div><b>Detected object:</b> {intel["Object"]}</div>
               <hr style="border: 0; border-top: 1px solid #1b2436; margin: 0.5rem 0;" />
-              <div><b>🌱 Sustainability</b><br>{intel["Sustainability"]}</div>
+              <div><b> Sustainability</b><br>{intel["Sustainability"]}</div>
               <div style="margin-top:0.5rem;"><b>📦 Supply chain</b><br>{intel["Supply Chain"]}</div>
               <div style="margin-top:0.5rem;"><b>🧮 Econometrics</b><br>{intel["Econometrics"]}</div>
               <div style="margin-top:0.5rem;"><b>🔍 Hazard</b><br>{intel["Hazard"]}</div>
