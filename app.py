@@ -4,11 +4,13 @@ from streamlit_autorefresh import st_autorefresh
 import av
 import cv2
 import numpy as np
+
 from backend.detector import Detector
 from backend.agentic_reasoner import AgenticReasoner
+from backend.tracker import SimpleSortTracker
 
 st.set_page_config(
-    page_title="Spectre Agentic AR – Irish Object Lens (v2)",
+    page_title="AFI-AR – Agentic Farm Intelligence AR System (v2 + SORT)",
     layout="wide"
 )
 
@@ -17,18 +19,16 @@ with open("ui/spectre_theme.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.markdown(
-    "<h1 class='spectre-title'>Agentic Farm Intelligence - Augmented Reality System - Ireland</h1>",
+    "<h1 class='spectre-title'>AFI-AR – Agentic Farm Intelligence AR System</h1>",
     unsafe_allow_html=True
 )
 
 st.markdown(
     """
     <p class='spectre-subtitle'>
-    System Architecture, Design and Engineering - Shubhojit Bagchi © 2025
-    
-    Live multi-agent AR: point your camera at an object and see sustainability, supply chain,
-    econometric, hazard, and LPIS insights overlaid and in the side intelligence panel.
-    Rear camera is used by default on iPhone.
+    Live multi-agent AR with SORT-style tracking: point your camera at an object and see
+    sustainability, supply chain, econometric, hazard, and LPIS insights overlaid and in
+    the side intelligence panel. Rear camera is used by default on iPhone.
     </p>
     """,
     unsafe_allow_html=True
@@ -36,17 +36,14 @@ st.markdown(
 
 # Sidebar controls
 st.sidebar.header("Agentic AR Controls")
-run_reasoner = st.sidebar.checkbox("Enable Agentic Reasoner", value=False)
+run_reasoner = st.sidebar.checkbox("Enable Agentic Reasoner (GPT-4o-mini)", value=False)
 max_fps = st.sidebar.slider("Processing FPS", 1, 15, 5)
 confidence_threshold = st.sidebar.slider("Detection confidence", 0.2, 0.9, 0.5, 0.05)
 
-# Camera toggle UI
 camera_choice = st.sidebar.selectbox(
     "Camera Source",
     ["rear (recommended)", "front"]
 )
-
-# Translate UI choice to WebRTC facingMode
 facing_mode = "environment" if camera_choice == "rear (recommended)" else "user"
 
 # Auto refresh for panel updates
@@ -64,6 +61,13 @@ class ARVideoProcessor(VideoProcessorBase):
         self.last_box = None
         self.last_agents = None
 
+        # SORT-style tracker for stable boxes
+        self.tracker = SimpleSortTracker(
+            max_age=10,
+            min_iou=0.3,
+            smoothing=0.5,
+        )
+
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
         img = frame.to_ndarray(format="bgr24")
         self.frame_count += 1
@@ -71,24 +75,31 @@ class ARVideoProcessor(VideoProcessorBase):
         process_interval = max(1, int(15 / max_fps))
 
         if self.frame_count % process_interval == 0:
-            label, box = detector.detect_single(img)
-            if label is not None:
-                self.last_label = label
-                self.last_box = box
+            detections = detector.detect_all(img)
+
+            # Run tracker – this stabilises and persists boxes
+            tracks = self.tracker.update(detections)
+
+            if tracks:
+                # For now, take the best-scoring track
+                best_track = max(tracks, key=lambda t: t.get("score", 0.0))
+                self.last_box = best_track["bbox"]
+                self.last_label = best_track.get("label", "object")
 
                 if run_reasoner:
-                    self.last_agents = reasoner.explain_structured(label)
+                    self.last_agents = reasoner.explain_structured(self.last_label)
                 else:
                     self.last_agents = None
             else:
-                self.last_label = None
                 self.last_box = None
+                self.last_label = None
                 self.last_agents = None
 
-        # Draw multi-line HUD
+        # Draw multi-line HUD for the currently locked track
         if self.last_label and self.last_box is not None:
             x1, y1, x2, y2 = self.last_box
 
+            # Bounding box (now stable due to tracker)
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 255), 2)
 
             # HUD lines
@@ -104,11 +115,16 @@ class ARVideoProcessor(VideoProcessorBase):
                 sc = self.last_agents.get("SUPPLY_CHAIN") or ""
                 lpis = self.last_agents.get("LPIS_GEO") or ""
 
-                if sust: lines.append("Sust: " + clip(sust))
-                if econ: lines.append("Econ: " + clip(econ))
-                if hazard: lines.append("Haz: " + clip(hazard))
-                if sc: lines.append("SC: " + clip(sc))
-                if lpis: lines.append("LPIS: " + clip(lpis))
+                if sust:
+                    lines.append("Sust: " + clip(sust))
+                if econ:
+                    lines.append("Econ: " + clip(econ))
+                if hazard:
+                    lines.append("Haz: " + clip(hazard))
+                if sc:
+                    lines.append("SC: " + clip(sc))
+                if lpis:
+                    lines.append("LPIS: " + clip(lpis))
 
             # Measure box size
             font = cv2.FONT_HERSHEY_SIMPLEX
@@ -139,7 +155,6 @@ class ARVideoProcessor(VideoProcessorBase):
                 thickness=1,
             )
 
-            # Draw lines
             y_text = box_top + 4 + line_height - 4
             for line, (tw, th) in zip(lines, text_sizes):
                 cv2.putText(
@@ -163,7 +178,8 @@ col_video, col_panel = st.columns([2.3, 1])
 with col_video:
     st.markdown(
         "<div class='spectre-panel'><b>Instructions:</b> On iPhone, rear camera will be "
-        "used by default. You can switch cameras from the sidebar.</div>",
+        "used by default. You can switch cameras from the sidebar. Boxes are stabilised "
+        "with a SORT-style tracker to reduce flicker.</div>",
         unsafe_allow_html=True,
     )
 
@@ -172,14 +188,14 @@ with col_video:
         mode=WebRtcMode.SENDRECV,
         video_processor_factory=ARVideoProcessor,
         media_stream_constraints={
-            "video": {"facingMode": {"exact": facing_mode}},  # 🔥 THIS IS THE IMPORTANT PART
+            "video": {"facingMode": {"exact": facing_mode}},
             "audio": False
         },
         async_processing=True,
     )
 
 with col_panel:
-    st.markdown("### Intelligence Panel")
+    st.markdown("### 🧠 Spectre Intelligence Panel")
     panel = st.empty()
 
     intel = None
@@ -201,7 +217,7 @@ with col_panel:
             <div class='spectre-panel'>
               <div><b>Detected object:</b> {intel["Object"]}</div>
               <hr style="border: 0; border-top: 1px solid #1b2436; margin: 0.5rem 0;" />
-              <div><b> Sustainability</b><br>{intel["Sustainability"]}</div>
+              <div><b>🌱 Sustainability</b><br>{intel["Sustainability"]}</div>
               <div style="margin-top:0.5rem;"><b>📦 Supply chain</b><br>{intel["Supply Chain"]}</div>
               <div style="margin-top:0.5rem;"><b>🧮 Econometrics</b><br>{intel["Econometrics"]}</div>
               <div style="margin-top:0.5rem;"><b>🔍 Hazard</b><br>{intel["Hazard"]}</div>
