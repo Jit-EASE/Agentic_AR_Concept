@@ -78,7 +78,7 @@ class ARVideoProcessor(VideoProcessorBase):
             lines = [self.last_label]
             if self.last_explanation:
                 # Keep only short snippet for overlay
-                snippet = self.last_explanation.split(".")[0][:80]
+                snippet = self.last_explanation.split(".")[0][:140]
                 lines.append(snippet)
 
             text = " | ".join(lines)
