@@ -24,6 +24,8 @@ st.markdown(
 st.markdown(
     """
     <p class='spectre-subtitle'>
+    ***System Architecture, Design and Engineering - Shubhojit Bagchi © 2025***
+    
     Live multi-agent AR: point your camera at an object and see sustainability, supply chain,
     econometric, hazard, and LPIS insights overlaid and in the side intelligence panel.
     Rear camera is used by default on iPhone.
