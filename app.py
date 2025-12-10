@@ -34,7 +34,7 @@ st.markdown(
     
     Real-time augmented intelligence system for field scanning, sustainability insights,
     supply-chain mapping, econometric reasoning, and LPIS awareness.  
-    Designed for professional agricultural and MIS research environments.
+    Concept Designed for Irish Agri-Food Research
     </p>
     """,
     unsafe_allow_html=True,
